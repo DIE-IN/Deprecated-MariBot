@@ -1,0 +1,6 @@
+eval
+node_modules
+*.mp3
+ff*
+secret*
+*.txt
