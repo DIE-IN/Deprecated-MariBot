@@ -1,41 +1,78 @@
-const api = require("buzzk");
-const { NID_AUT, NID_SES, Token, clientId } = require("./secret.json")
-const { administrator } = require("./administrator.json")
-const fs = require('fs');
-const path = require('path');
-const 양소리 = './양소리.txt';
-const chatApi = api.chat
-const { Client, Collection, GatewayIntentBits, REST, Routes, ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-const player = createAudioPlayer();
-const { color } = require("./color.js")
-const client = new Client({
-    intents: Object.keys(GatewayIntentBits).map((a)=>{
-      return GatewayIntentBits[a]
-    })
-})
+      const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
+     const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
+    const { NID_AUT, NID_SES, Token, clientId } = require("./secret.json");
+   const { administrator } = require("./administrator.json");
+  const { YtDlpPlugin } = require('@distube/yt-dlp');
+ const { DisTube } = require('distube');
+const { color } = require("./color");
+const client = new Client({intents: Object.keys(GatewayIntentBits).map((a)=>{return GatewayIntentBits[a]})});
+ const request = require('request');
+  const player = createAudioPlayer();
+   const 양소리 = './양소리.txt';
+    const path = require('path');
+     const api = require("buzzk");
+      const fs = require('fs');
 
-var count = 0
-var resource = createAudioResource('./alert.mp3')
-var connection = null
-var channel3 = null
-var joined = false
+  var resource = createAudioResource('./alert.mp3');
+ var connection = null;
+var channel3 = null;
+ var joined = false;
+  var count = 0;
 
 function obj(object) {
     return Object.getOwnPropertyNames(object)
 }
-
-api.login(NID_AUT, NID_SES)
-
 function sleep(ms) {
     const wakeUpTime = Date.now() + ms;
     while (Date.now() < wakeUpTime) {}
 }
 
+client.distube = new DisTube(client, {
+      emitAddSongWhenCreatingQueue: false,
+     emitAddListWhenCreatingQueue: false,
+    plugins: [new YtDlpPlugin()],
+     emitNewSongOnly: true,
+      leaveOnStop: false,
+});
+
+client.commands = new Collection();
+
+const commands = [];
+const foldersPath = path.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+	const commandsPath = path.join(foldersPath, folder);
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+	for (const file of commandFiles) {
+		const filePath = path.join(commandsPath, file);
+		const command = require(filePath);
+		commands.push(command.data.toJSON());
+        if ('data' in command && 'execute' in command) {
+			client.commands.set(command.data.name, command);
+		} else {
+			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+		}
+	}
+}
+
+const rest = new REST().setToken(Token);
+(async () => {
+	try {
+		await rest.put(
+			Routes.applicationCommands(clientId),
+			{ body: commands },
+		);
+	} catch (error) {
+		console.error(error);
+	}
+})();
+
 async function main() {
-    let search = await api.channel.search("명훈명훈")
-    let channel = search[0]
-    let chat = new chatApi(channel.channelID)
+    let search = await api.channel.search("명훈명훈");
+    let channel = search[0];
+    let chat = new api.chat(channel.channelID);
+
     await chat.connect()
 
     chat.onMessage(async (data) => {
@@ -130,41 +167,6 @@ client.on('messageCreate', async msg => {
     }
 })
 
-client.commands = new Collection();
-const commands = [];
-// Grab all the command folders from the commands directory you created earlier
-const foldersPath = path.join(__dirname, 'commands');
-const commandFolders = fs.readdirSync(foldersPath);
-
-for (const folder of commandFolders) {
-	// Grab all the command files from the commands directory you created earlier
-	const commandsPath = path.join(foldersPath, folder);
-	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-	// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
-	for (const file of commandFiles) {
-		const filePath = path.join(commandsPath, file);
-		const command = require(filePath);
-		commands.push(command.data.toJSON());
-        if ('data' in command && 'execute' in command) {
-			client.commands.set(command.data.name, command);
-		} else {
-			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-		}
-	}
-}
-
-const rest = new REST().setToken(Token);
-(async () => {
-	try {
-		await rest.put(
-			Routes.applicationCommands(clientId),
-			{ body: commands },
-		);
-	} catch (error) {
-		console.error(error);
-	}
-})();
-
 client.on('interactionCreate', async interaction => {
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
@@ -204,12 +206,23 @@ client.on('interactionCreate', async interaction => {
                 content: `관리자가 아닙니다.`
             })
         }
+    } else if (interaction.isAutocomplete()) {
+        if (interaction.commandName == "재생") {
+            let string = interaction.options.getString('제목', true)
+            if (string.length >= 1) {
+                request.get(`https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&hl=ko&gl=kr&q=${string}}`, (err, response, body) => {
+                    if (err) console.log;
+                    console.log(response)
+                })
+            }
+        }
     }
 })
 
 client.on('ready', async (client) => {
-    main()
     console.log(`Discord Connected!`)
+    api.login(NID_AUT, NID_SES)
+    main()
 })
 
 client.login(Token)
