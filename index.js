@@ -72,6 +72,9 @@ const rest = new REST().setToken(Token);
 	}
 })();
 
+/**
+ * 치지직
+ */
 async function main() {
     let search = await api.channel.search("명훈명훈");
     let channel = search[0];
