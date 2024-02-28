@@ -1,23 +1,27 @@
-      const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-     const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
-    const { NID_AUT, NID_SES, Token, clientId } = require("./secret.json");
-   const { administrator } = require("./administrator.json");
-  const { YtDlpPlugin } = require('@distube/yt-dlp');
- const { DisTube } = require('distube');
-const { color } = require("./color");
+       const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
+      const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
+     const { NID_AUT, NID_SES, Token, clientId } = require("./secret.json");
+    const { administrator } = require("./administrator.json");
+   const { YtDlpPlugin } = require('@distube/yt-dlp');
+  const { DisTube } = require('distube');
+ const { color } = require("./color");
 const client = new Client({intents: Object.keys(GatewayIntentBits).map((a)=>{return GatewayIntentBits[a]})});
- const request = require('request');
+const request = require('request');
+ const iconv = require('iconv-lite');
   const player = createAudioPlayer();
-   const 양소리 = './양소리.txt';
-    const path = require('path');
-     const api = require("buzzk");
-      const fs = require('fs');
+   const charset = require('charset');
+    const 양소리 = './양소리.txt';
+     const path = require('path');
+      const api = require("buzzk");
+       const fs = require('fs');
 
   var resource = createAudioResource('./alert.mp3');
  var connection = null;
 var channel3 = null;
  var joined = false;
   var count = 0;
+
+process.env.YTSR_NO_UPDATE = "1";
 
 function obj(object) {
     return Object.getOwnPropertyNames(object)
@@ -195,6 +199,7 @@ client.on('interactionCreate', async interaction => {
                     })
                 }
             } catch (err) {
+                let st = new Date().getTime()
                 await interaction.reply({
                     ephemeral: true,
                     content: `${String(err)}\n${String(new Date().getTime() - st)}ms`
@@ -208,11 +213,20 @@ client.on('interactionCreate', async interaction => {
         }
     } else if (interaction.isAutocomplete()) {
         if (interaction.commandName == "재생") {
-            let string = interaction.options.getString('제목', true)
+            const command = interaction.client.commands.get(interaction.commandName);
+            let string = encodeURI(interaction.options.getString('제목', true))
             if (string.length >= 1) {
-                request.get(`https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&hl=ko&gl=kr&q=${string}}`, (err, response, body) => {
-                    if (err) console.log;
-                    console.log(response)
+                request.get({
+                    uri: `https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&ds=yt&hl=ko&gl=kr&q=${string}}`,
+                    encoding: null
+                }, (err, res, body) => {
+                    if (err) console.log(err);
+                    const enc = charset(res.headers, body) // 해당 사이트의 charset값을 획득
+                    const i_result = iconv.decode(body, enc) // 획득한 charset값으로 body를 디코딩
+                    const arr = JSON.parse(i_result.substring(i_result.indexOf("["), i_result.indexOf("])") + 1));
+                    interaction.respond(
+                        arr[1].map(a => ({name: a[0], value: a[0]}))
+                    )
                 })
             }
         }
