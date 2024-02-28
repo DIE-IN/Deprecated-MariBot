@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js')
 let { tier } = require('../../RPS.json')
 const EloRank = require('elo-rank');
-const elo = new EloRank(100)
+const elo = new EloRank(50)
 const fs = require('fs')
 
 module.exports = {
@@ -23,7 +23,7 @@ module.exports = {
         function result(info) {
             // win
             if (winner[bot] == user) {
-                let resultJson = {'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 1, info.elo)}
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 1, info.elo)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
@@ -36,7 +36,7 @@ module.exports = {
             }
             // lose
             else if (winner[user] == bot) {
-                let resultJson = {'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 0, info.elo)}
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 0, info.elo)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
@@ -49,20 +49,20 @@ module.exports = {
             }
             // draw
             else {
-                let resultJson = {'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 0.5, info.elo)}
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 0.5, info.elo)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
                     content: `${interaction.user.displayName}: ${user}
                     봇: ${bot}
                     무승부!
-                    점수: ${resultJson.elo}(${pmelo > -1 ? "+" : "-"}${pmelo})`
+                    점수: ${resultJson.elo}(${pmelo > -1 ? "+" : ""}${pmelo})`
                 })
                 return resultJson
             }
         }
         if (!tier[interaction.user.id]) {
-            tier[interaction.user.id] = {'win': 0, 'lose': 0, 'draw': 0, 'elo': 1000}
+            tier[interaction.user.id] = {'name': interaction.user.displayName, 'win': 0, 'lose': 0, 'draw': 0, 'elo': 1000}
         }
         tier[interaction.user.id] = result(tier[interaction.user.id])
         fs.writeFileSync('RPS.json', JSON.stringify({'tier': tier}))
