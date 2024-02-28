@@ -4,3 +4,4 @@ node_modules
 ff*
 secret*
 *.txt
+administrator.json

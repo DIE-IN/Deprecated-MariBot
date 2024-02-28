@@ -1,10 +1,12 @@
 const api = require("buzzk");
-const { NID_AUT, NID_SES, Token } = require("./secret.json")
+const { NID_AUT, NID_SES, Token, clientId } = require("./secret.json")
+const { administrator } = require("./administrator.json")
 const fs = require('fs');
+const path = require('path');
 const 양소리 = './양소리.txt';
 const chatApi = api.chat
-const { Client, GatewayIntentBits } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnection } = require('@discordjs/voice');
+const { Client, Collection, GatewayIntentBits, REST, Routes, ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
 const player = createAudioPlayer();
 const { color } = require("./color.js")
 const client = new Client({
@@ -14,10 +16,10 @@ const client = new Client({
 })
 
 var count = 0
-
-var resource = createAudioResource('./alert.mp3');
+var resource = createAudioResource('./alert.mp3')
 var connection = null
 var channel3 = null
+var joined = false
 
 function obj(object) {
     return Object.getOwnPropertyNames(object)
@@ -36,21 +38,13 @@ async function main() {
     let chat = new chatApi(channel.channelID)
     await chat.connect()
 
-    async function d() {
-        channel3 = await client.channels.fetch("1210860341119156224")
-        connection = joinVoiceChannel({
-            channelId: channel3.id,
-            guildId: channel3.guild.id,
-            adapterCreator: channel3.guild.voiceAdapterCreator,
-            selfDeaf: false
-        });
-    } d()
-
     chat.onMessage(async (data) => {
         for (let o in data) {
-            resource = createAudioResource('./alert.mp3');
-            connection.subscribe(player);
-            player.play(resource);
+            if (joined) {
+                resource = createAudioResource('./alert.mp3');
+                connection.subscribe(player);
+                player.play(resource);
+            }
 
             var date = new Date(data[o].time);
             var time = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
@@ -121,29 +115,101 @@ async function main() {
 }
 
 client.on('messageCreate', async msg => {
-    if (msg.author.id === "596928010200809493" && msg.channelId === "1210873941833547776" && msg.content.startsWith("ev ")) {
-        try {
-            let st = new Date().getTime()
-            let ev = eval(msg.content.split("ev ")[1])
-            if (String(ev).length <= 1999) {
-                msg.channel.send(`\`\`\`js\n${String(ev)}\n\`\`\`\n${String(new Date().getTime() - st)}ms`).catch((err)=>{
-                    msg.channel.send(`${String(err)}\n${String(new Date().getTime() - st)}ms`)
+
+     if (msg.content == "join") {
+        async function d() {
+            channel3 = await client.channels.fetch("1210860341119156224")
+            connection = joinVoiceChannel({
+                channelId: channel3.id,
+                guildId: channel3.guild.id,
+                adapterCreator: channel3.guild.voiceAdapterCreator,
+                selfDeaf: false
+            });
+            joined = true
+        } d()
+    }
+})
+
+client.commands = new Collection();
+const commands = [];
+// Grab all the command folders from the commands directory you created earlier
+const foldersPath = path.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+	// Grab all the command files from the commands directory you created earlier
+	const commandsPath = path.join(foldersPath, folder);
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+	// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
+	for (const file of commandFiles) {
+		const filePath = path.join(commandsPath, file);
+		const command = require(filePath);
+		commands.push(command.data.toJSON());
+        if ('data' in command && 'execute' in command) {
+			client.commands.set(command.data.name, command);
+		} else {
+			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+		}
+	}
+}
+
+const rest = new REST().setToken(Token);
+(async () => {
+	try {
+		await rest.put(
+			Routes.applicationCommands(clientId),
+			{ body: commands },
+		);
+	} catch (error) {
+		console.error(error);
+	}
+})();
+
+client.on('interactionCreate', async interaction => {
+    if (interaction.isChatInputCommand()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) {
+            console.error(`No command matching ${interaction.commandName} was found.`);
+            return;
+        }
+        await command.execute(interaction);
+    } else if (interaction.isModalSubmit()) {
+        if (interaction.customId == 'eval' && administrator.includes(interaction.user.id)) {
+            try {
+                let st = new Date().getTime()
+                let ev = eval(interaction.fields.getTextInputValue('code'))
+                if (String(ev).length <= 1999) {
+                    await interaction.reply(`\`\`\`js\n${String(ev)}\n\`\`\`\n${String(new Date().getTime() - st)}ms`).catch((err)=>{
+                        interaction.reply({
+                            ephemeral: true,
+                            content: `${String(err)}\n${String(new Date().getTime() - st)}ms`
+                        })
+                    })
+                }
+                else {
+                    let file = `./eval/${new Date().getTime()}.js`
+                    fs.writeFile(file, String(ev), (err) => {
+                        interaction.reply({files: [file]})
+                    })
+                }
+            } catch (err) {
+                await interaction.reply({
+                    ephemeral: true,
+                    content: `${String(err)}\n${String(new Date().getTime() - st)}ms`
                 })
             }
-            else {
-                let file = `./eval/${new Date().getTime()}.js`
-                fs.writeFile(file, String(ev), (err) => {
-                    msg.channel.send({files: [file]})
-                })
-            }
-        } catch (err) {
-            msg.channel.send(`${String(err)}\n${String(new Date().getTime() - st)}ms`)
+        } else {
+            await interaction.reply({
+                ephemeral: true,
+                content: `관리자가 아닙니다.`
+            })
         }
     }
 })
 
 client.on('ready', async (client) => {
     main()
+    console.log(`Discord Connected!`)
 })
 
 client.login(Token)
