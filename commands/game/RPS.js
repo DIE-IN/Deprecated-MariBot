@@ -4,6 +4,16 @@ const EloRank = require('elo-rank');
 const elo = new EloRank(50)
 const fs = require('fs')
 
+class Player {
+    constructor(id, name, win, lose, el) {
+        this.id = id,
+        this.name = name,
+        this.win = win,
+        this.lose = lose,
+        this.elo = el
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('가위바위보')

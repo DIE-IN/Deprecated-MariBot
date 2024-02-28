@@ -239,7 +239,7 @@ client.on('interactionCreate', async interaction => {
 client.on('ready', async (client) => {
     console.log(`Discord Connected!`)
     api.login(NID_AUT, NID_SES)
-    main()
+    // main()
 })
 
 client.login(Token)
