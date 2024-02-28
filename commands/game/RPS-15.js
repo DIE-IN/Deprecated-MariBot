@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js')
 let { tier15 } = require('../../RPS-15.json')
 const EloRank = require('elo-rank');
-const elo = new EloRank(32)
+const elo = new EloRank(16)
 const fs = require('fs')
 
 module.exports = {
@@ -92,7 +92,7 @@ module.exports = {
             }
             winArray[user].includes(bot) ? result = true : result = false;
             if (result == true) {
-                let points = elo.updateRating(elo.getExpected(info.elo, 2000), 1, info.elo)
+                let points = elo.updateRating(elo.getExpected(info.elo, 1625), 1, info.elo)
                 let resultJson = {'name': interaction.user.displayName, 'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': points, 'rankTier': ti(points)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
@@ -102,7 +102,7 @@ module.exports = {
                 return resultJson
             }
             else if (result == false) {
-                let points = elo.updateRating(elo.getExpected(info.elo, 2000), 0, info.elo)
+                let points = elo.updateRating(elo.getExpected(info.elo, 1625), 0, info.elo)
                 let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': points, 'rankTier': ti(points)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
@@ -112,7 +112,7 @@ module.exports = {
                 return resultJson
             }
             else if (result == null) {
-                let points = elo.updateRating(elo.getExpected(info.elo, 2000), 0.5, info.elo)
+                let points = elo.updateRating(elo.getExpected(info.elo, 1625), 0.5, info.elo)
                 let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': points, 'rankTier': ti(points)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
