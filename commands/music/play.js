@@ -23,7 +23,7 @@ module.exports = {
             await ytdl.getInfo(song.url).then(async videos =>{
                 let video = videos.videoDetails
                 let uploader = video.author
-                function truncateString(str, numLines) {
+                function truncateString(str=String(), numLines=Number()) {
                     const lines = str.split('\n');
                     if (lines.length <= numLines) {
                       return str;
@@ -35,7 +35,7 @@ module.exports = {
                     embed = new EmbedBuilder()
                         .setAuthor({name: uploader.name, url: uploader.channel_url, iconURL: uploader.thumbnails[0].url})
                         .setTitle(video.title)
-                        .setDescription(truncateString(video.description.replaceAll("\n\n", "\n"), 5) + "\n[...더보기](https://www.youtube.com/watch?v=aoQm-a43Ee4)")
+                        .setDescription(truncateString(video.description.replaceAll("\n\n", "\n"), 5) + `\n[...더보기](${song.url})`)
                         .setTimestamp(Date.parse(video.uploadDate))
                         .setImage(song.thumbnail)
                         .setURL(song.url)
