@@ -1,18 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js')
 let { tier } = require('../../RPS.json')
 const EloRank = require('elo-rank');
-const elo = new EloRank(50)
+const elo = new EloRank(32)
 const fs = require('fs')
-
-class Player {
-    constructor(id, name, win, lose, el) {
-        this.id = id,
-        this.name = name,
-        this.win = win,
-        this.lose = lose,
-        this.elo = el
-    }
-}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -33,46 +23,37 @@ module.exports = {
         function result(info) {
             // win
             if (winner[bot] == user) {
-                let resultJson = {'name': interaction.user.displayName, 'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 1, info.elo)}
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 2000), 1, info.elo)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
-                    content: `${interaction.user.displayName}: ${user}
-                    봇: ${bot}
-                    승리!
-                    점수: ${resultJson.elo}(+${pmelo})`
+                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n승리!\n점수: ${resultJson.elo}(+${pmelo})`
                 })
                 return resultJson
             }
             // lose
             else if (winner[user] == bot) {
-                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 0, info.elo)}
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 2000), 0, info.elo)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
-                    content: `${interaction.user.displayName}: ${user}
-                    봇: ${bot}
-                    패배!
-                    점수: ${resultJson.elo}(${pmelo})`
+                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n패배!\n점수: ${resultJson.elo}(${pmelo})`
                 })
                 return resultJson
             }
             // draw
             else {
-                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': elo.updateRating(elo.getExpected(info.elo, 1000), 0.5, info.elo)}
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': elo.updateRating(elo.getExpected(info.elo, 2000), 0.5, info.elo)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
-                    content: `${interaction.user.displayName}: ${user}
-                    봇: ${bot}
-                    무승부!
-                    점수: ${resultJson.elo}(${pmelo > -1 ? "+" : ""}${pmelo})`
+                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n무승부!\n점수: ${resultJson.elo}(${pmelo > -1 ? "+" : ""}${pmelo})`
                 })
                 return resultJson
             }
         }
         if (!tier[interaction.user.id]) {
-            tier[interaction.user.id] = {'name': interaction.user.displayName, 'win': 0, 'lose': 0, 'draw': 0, 'elo': 1000}
+            tier[interaction.user.id] = {'name': interaction.user.displayName, 'win': 0, 'lose': 0, 'draw': 0, 'elo': 1200}
         }
         tier[interaction.user.id] = result(tier[interaction.user.id])
         fs.writeFileSync('RPS.json', JSON.stringify({'tier': tier}))

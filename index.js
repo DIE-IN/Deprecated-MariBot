@@ -1,5 +1,5 @@
        const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-      const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
+      const { Client, Collection, GatewayIntentBits, REST, Routes, InteractionType } = require('discord.js');
      const { NID_AUT, NID_SES, Token, clientId } = require("./secret.json");
     const { administrator } = require("./administrator.json");
    const { YtDlpPlugin } = require('@distube/yt-dlp');
