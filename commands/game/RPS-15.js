@@ -52,43 +52,78 @@ module.exports = {
         };
         let user = interaction.options.getString('내기')
         function result(info) {
+            /**
+             * Code Created by Gemini
+             * @param {number} eloPoint 
+             * @returns {string} rankTier
+             */
+            function ti(eloPoint){
+                const ranks = [
+                    "IRON IV", "IRON III", "IRON II", "IRON I",
+                    "BRONZE IV", "BRONZE III", "BRONZE II", "BRONZE I",
+                    "SILVER IV", "SILVER III", "SILVER II", "SILVER I",
+                    "GOLD IV", "GOLD III", "GOLD II", "GOLD I",
+                    "PLATINUM IV", "PLATINUM III", "PLATINUM II", "PLATINUM I",
+                    "DIAMOND IV", "DIAMOND III", "DIAMOND II", "DIAMOND I",
+                    "MASTER", "GRANDMASTER", "CHALLENGER"
+                ];
+                
+                const divisions = [
+                    1225, 1250, 1275, 1300,
+                    1325, 1350, 1375, 1400,
+                    1425, 1450, 1475, 1500,
+                    1525, 1550, 1575, 1600,
+                    1625, 1650, 1675, 1700,
+                    1725, 1750, 1775, 1800,
+                    2200, 2600, 3000
+                ];
+                
+                for (let i = 0; i < divisions.length; i++) {
+                    if (eloPoint <= divisions[i]) {
+                        return ranks[i];
+                    }
+                }
+            }
             // win
             let bot = array[Math.floor(Math.random() * array.length)]
-            let result = ""
+            let result = null
             if (user === bot) {
-                result = "무승부";
+                result = null;
             }
             winArray[user].includes(bot) ? result = true : result = false;
-            if (result) {
-                let resultJson = {'name': interaction.user.displayName, 'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 2000), 1, info.elo)}
+            if (result == true) {
+                let points = elo.updateRating(elo.getExpected(info.elo, 2000), 1, info.elo)
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win + 1, 'lose': info.lose, 'draw': info.draw, 'elo': points, 'rankTier': ti(points)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
-                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n승리!\n점수: ${resultJson.elo}(+${pmelo})`
+                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n승리!\n${(ti(points) == info.rankTier) ? info.rankTier : `${info.rankTier} -> ${ti(points)}`} ${resultJson.elo} (+${pmelo})`
                 })
                 return resultJson
             }
-            else if (!result) {
-                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': elo.updateRating(elo.getExpected(info.elo, 2000), 0, info.elo)}
+            else if (result == false) {
+                let points = elo.updateRating(elo.getExpected(info.elo, 2000), 0, info.elo)
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose + 1, 'draw': info.draw, 'elo': points, 'rankTier': ti(points)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
-                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n패배!\n점수: ${resultJson.elo}(+${pmelo})`
+                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n패배!\n${(ti(points) == info.rankTier) ? info.rankTier : `${info.rankTier} -> ${ti(points)}`} ${resultJson.elo} (${pmelo})`
                 })
                 return resultJson
             }
-            else {
-                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': elo.updateRating(elo.getExpected(info.elo, 2000), 0.5, info.elo)}
+            else if (result == null) {
+                let points = elo.updateRating(elo.getExpected(info.elo, 2000), 0.5, info.elo)
+                let resultJson = {'name': interaction.user.displayName, 'win': info.win, 'lose': info.lose, 'draw': info.draw + 1, 'elo': points, 'rankTier': ti(points)}
                 let pmelo = resultJson.elo - info.elo
                 interaction.reply({
                     ephemeral: true,
-                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n무승부!\n점수: ${resultJson.elo}(+${pmelo})`
+                    content: `${interaction.user.displayName}: ${user}\n봇: ${bot}\n무승부!\n${(ti(points) == info.rankTier) ? info.rankTier : `${info.rankTier} -> ${ti(points)}`} ${resultJson.elo} (${pmelo > -1 ? "+" : ""}${pmelo})`
                 })
                 return resultJson
             }
         }
         if (!tier15[interaction.user.id]) {
-            tier15[interaction.user.id] = {'name': interaction.user.displayName, 'win': 0, 'lose': 0, 'draw': 0, 'elo': 1200}
+            tier15[interaction.user.id] = {'name': interaction.user.displayName, 'win': 0, 'lose': 0, 'draw': 0, 'elo': 1200, 'rankTier': "IRON IV"}
         }
         tier15[interaction.user.id] = result(tier15[interaction.user.id])
         fs.writeFileSync('RPS-15.json', JSON.stringify({'tier15': tier15}))
